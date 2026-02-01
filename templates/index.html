@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Language Translator</title>
+    <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    body {
+        background-image: url("{{ url_for('static', filename='bg.png') }}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        min-height: 100vh;
+
+        display: flex;
+        justify-content: flex-start;   /* move box to left */
+        align-items: center;          /* keep vertically centered */
+
+        padding-left: 80px;           /* space from left edge */
+        padding-right: 20px;
+    }
+    
+    .container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 40px;
+        max-width: 600px;
+        width: 100%;
+    }
+    
+    h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 2.5em;
+    }
+    
+    .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 30px;
+        font-size: 1.1em;
+    }
+    
+    .upload-box {
+        border: 3px dashed #667eea;
+        border-radius: 15px;
+        padding: 40px;
+        text-align: center;
+        background: #f8f9ff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 20px;
+    }
+    
+    .upload-box:hover {
+        border-color: #764ba2;
+        background: #f0f2ff;
+    }
+    
+    .upload-box.dragover {
+        border-color: #764ba2;
+        background: #e8e9ff;
+        transform: scale(1.02);
+    }
+    
+    .upload-icon {
+        font-size: 3em;
+        margin-bottom: 15px;
+    }
+    
+    .upload-text {
+        color: #667eea;
+        font-weight: bold;
+        font-size: 1.1em;
+        margin-bottom: 10px;
+    }
+    
+    .upload-hint {
+        color: #999;
+        font-size: 0.9em;
+    }
+    
+    #imageInput {
+        display: none;
+    }
+    
+    .preview-area {
+        text-align: center;
+        margin: 20px 0;
+    }
+    
+    .preview-area img {
+        max-width: 100%;
+        max-height: 400px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        margin-bottom: 15px;
+    }
+    
+    .button-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    button {
+        flex: 1;
+        padding: 12px;
+        font-size: 1em;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .upload-btn {
+        background: #667eea;
+        color: white;
+    }
+    
+    .upload-btn:hover {
+        background: #764ba2;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .clear-btn {
+        background: #ddd;
+        color: #333;
+    }
+    
+    .clear-btn:hover {
+        background: #ccc;
+    }
+</style>
+
+</head>
+<body>
+    <div class="container">
+        <h1> Sign Language Translator</h1>
+        <p class="subtitle">Upload an image to recognize the sign</p>
+        
+        <form id="uploadForm" method="POST" enctype="multipart/form-data">
+            <div class="upload-box" id="uploadBox">
+                <div class="upload-icon">📸</div>
+                <div class="upload-text">Click to upload or drag & drop</div>
+                <div class="upload-hint">PNG, JPG up to 10MB</div>
+                <input type="file" id="imageInput" name="image" accept="image/*" required>
+            </div>
+            
+            <div class="preview-area" id="previewArea"></div>
+            
+            <div class="button-group">
+                <button type="submit" class="upload-btn" id="submitBtn">🔍 Predict Sign</button>
+                <button type="button" class="clear-btn" id="clearBtn">🗑️ Clear</button>
+            </div>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p></p>
+        </div>
+        
+        {% if prediction %}
+        <div class="result-box show" id="resultBox">
+            <div class="prediction-title">Predicted Sign:</div>
+            <div class="prediction-text">{{ prediction }}</div>
+            
+            {% if probabilities %}
+            <div class="confidence-box">
+                <div class="confidence-title">Confidence Scores:</div>
+                {% for sign, prob in probabilities.items() %}
+                <div class="confidence-item">
+                    <span class="confidence-label">{{ sign }}</span>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: {{ prob }}%"></div>
+                    </div>
+                    <span class="confidence-percent">{{ prob }}%</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    
+    <script>
+        const uploadBox = document.getElementById('uploadBox');
+        const imageInput = document.getElementById('imageInput');
+        const previewArea = document.getElementById('previewArea');
+        const uploadForm = document.getElementById('uploadForm');
+        const clearBtn = document.getElementById('clearBtn');
+        const loading = document.getElementById('loading');
+        
+        // Click to upload
+        uploadBox.addEventListener('click', () => imageInput.click());
+        
+        // Drag and drop
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadBox.classList.add('dragover');
+        });
+        
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('dragover');
+        });
+        
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                imageInput.files = files;
+                showPreview();
+            }
+        });
+        
+        // File input change
+        imageInput.addEventListener('change', showPreview);
+        
+        function showPreview() {
+            const file = imageInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewArea.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                    uploadBox.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Clear
+        clearBtn.addEventListener('click', () => {
+            imageInput.value = '';
+            previewArea.innerHTML = '';
+            uploadBox.style.display = 'block';
+            document.getElementById('resultBox').classList.remove('show');
+        });
+        
+        // Submit form
+        uploadForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (imageInput.files.length > 0) {
+                loading.classList.add('show');
+                uploadForm.submit();
+            }
+        });
+    </script>
+</body>
+</html>

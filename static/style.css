@@ -1,0 +1,52 @@
+body {
+    font-family: Arial;
+    text-align: center;
+    margin-top: 60px;
+    background-color: #f7f7f7;
+}
+
+h1 {
+    color: #333;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+
+.conf-container {
+    margin-top: 15px;
+    max-width: 420px;
+}
+
+.conf-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.conf-label {
+    width: 30px;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.conf-bar {
+    flex-grow: 1;
+    background: #eee;
+    border-radius: 10px;
+    overflow: hidden;
+    height: 22px;
+}
+
+.conf-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4facfe, #00f2fe);
+    color: black;
+    text-align: right;
+    padding-right: 6px;
+    font-size: 12px;
+    line-height: 22px;
+    transition: width 0.5s ease;
+}
