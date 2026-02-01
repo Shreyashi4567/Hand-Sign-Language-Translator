@@ -16,7 +16,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 # Load Orange model
-with open("neural network2.pkcls", "rb") as f:
+with open("neural_network.pkcls", "rb") as f:
     model = pickle.load(f)
 
 print("✅ Model loaded")
